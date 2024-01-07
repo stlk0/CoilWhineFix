@@ -1,0 +1,71 @@
+﻿<Window x:Class="CoilWhineFix.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:CoilWhineFix.converters"
+        xmlns:views="clr-namespace:CoilWhineFix.Views"
+        xmlns:viewModels="clr-namespace:CoilWhineFix.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance viewModels:SettingsViewModel}"
+        StateChanged="Window_StateChanged"
+        Title="CoilWhineFix" Height="220" Width="400"
+        ResizeMode="CanMinimize">
+    <Window.Resources>
+        <converters:IntToStringConverter x:Key="IntToStringConverter" />
+        <converters:TaskTypeToBooleanConverter x:Key="TaskTypeToBooleanConverter" />
+        <Style TargetType="Label">
+            <Setter Property="Margin" Value="20,10,20,5" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Width" Value="150" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Margin" Value="0,0" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Label Content="Select Task:" Grid.Row="0" />
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="20,0">
+            <RadioButton x:Name="RadioButtonGpuNopTask" Content="GPU NOP Task"
+                         IsChecked="{Binding SelectedTask, Converter={StaticResource TaskTypeToBooleanConverter}, ConverterParameter={x:Static views:TaskType.GpuNopTask}}" />
+            <RadioButton x:Name="RadioButtonDrawPixelTask" Content="Draw Pixel Task"
+                         IsChecked="{Binding SelectedTask, Converter={StaticResource TaskTypeToBooleanConverter}, ConverterParameter={x:Static views:TaskType.DrawPixelTask}}"
+                         Margin="10,0,0,0" />
+        </StackPanel>
+
+        <Label Content="Delay (ms)" Grid.Row="2" />
+
+        <Grid Grid.Row="3" Margin="20,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Slider Grid.Column="0" Maximum="200" Minimum="1" Margin="0,0, 10, 0"
+                    Value="{Binding DelayMs, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Grid.Column="1" x:Name="DelayMsTextBox" HorizontalAlignment="Right" Width="60"
+                     Text="{Binding DelayMs, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource IntToStringConverter}, StringFormat=F0, Mode=TwoWay}" />
+        </Grid>
+
+        <Grid Grid.Row="4" Margin="20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Minimize to Tray" Click="MinimizeToTray_Click" HorizontalAlignment="Left" />
+            <CheckBox Grid.Column="1" Content="Run at Startup" Margin="0, 10"
+                      IsChecked="{Binding RunAtStartup, Mode=TwoWay}" />
+        </Grid>
+    </Grid>
+</Window>
