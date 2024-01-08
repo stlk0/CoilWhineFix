@@ -1,0 +1,82 @@
+﻿name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+      description:
+        description: 'Release description'
+        required: true
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v1
+
+      - name: Build Application
+        run: dotnet build CoilWhineFix.sln --configuration Release -o ./build_output
+
+      - name: Check if release exists
+        id: check_release
+        run: |
+          RESPONSE=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.event.inputs.version }})
+          RELEASE_ID=$(echo $RESPONSE | jq -r '.id')
+          echo "RELEASE_ID=$RELEASE_ID"
+          if [[ "$RELEASE_ID" != "null" && "$RELEASE_ID" != "" ]]; then
+            echo "::set-output name=exists::true"
+            echo "::set-output name=release_id::$RELEASE_ID"
+          else
+            echo "::set-output name=exists::false"
+          fi
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create a new release
+        id: create_release
+        if: steps.check_release.outputs.exists == 'false'
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: ${{ github.event.inputs.version }}
+          body: ${{ github.event.inputs.description }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup before starting
+        run: |
+          if (Test-Path -Path CoilWhineFix) {
+            Remove-Item -Path CoilWhineFix -Recurse -Force
+          }
+        shell: pwsh
+
+      - name: Build artifact
+        run: |
+          mkdir CoilWhineFix
+          cp -r ./build_output/* CoilWhineFix/
+          rm -f CoilWhineFix/CoilWhineFix.pdb
+          7z a CoilWhineFix_${{ github.event.inputs.version }}_${{ github.ref_name }}.zip ./CoilWhineFix/
+        shell: bash
+
+      - name: Upload Artifact to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.check_release.outputs.exists == 'true' && format('https://uploads.github.com/repos/{0}/releases/{1}/assets{2}', github.repository, steps.check_release.outputs.release_id, '{?name,label}') || steps.create_release.outputs.upload_url }}
+          asset_path: ./CoilWhineFix_${{ github.event.inputs.version }}_${{ github.ref_name }}.zip
+          asset_name: CoilWhineFix_${{ github.event.inputs.version }}_${{ github.ref_name }}.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
