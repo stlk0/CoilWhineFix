@@ -12,6 +12,9 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // Set the current directory to the application's base directory
+        System.IO.Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+        
         InitializeTrayIcon();
     }
 
